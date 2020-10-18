@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="LOG_LEVEL" value="INFO"/>
+    <property name="LOG_PATH" value="logs"/>
+    <property name="LOG_FILE_MAX_SIZE" value="20MB"/>
+    <property name="LOG_PATTERN" value="%d{HH:mm:ss.SSS} ${PID} [%thread] %-5level %logger.%method:%line --> %msg%n"/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="root" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <file>${LOG_PATH}/zzjroot.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>root.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="zzjservice" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <file>${LOG_PATH}/zzjservice.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>zzjservice.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="zzjtest" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <file>${LOG_PATH}/zzjtest.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>zzjtest.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
+        </rollingPolicy>
+    </appender>
+
+    <root level="${LOG_LEVEL}">
+        <appender-ref ref="root"/>
+        <appender-ref ref="console"/>
+    </root>
+    <logger name="com.zzj.zzjservice" additivity="false" level="${LOG_LEVEL}">
+        <appender-ref ref="zzjservice"/>
+        <appender-ref ref="console"/>
+    </logger>
+    <logger name="com.zzj.zzjtest" additivity="false" level="${LOG_LEVEL}">
+        <appender-ref ref="zzjtest"/>
+        <appender-ref ref="console"/>
+    </logger>
+</configuration>
