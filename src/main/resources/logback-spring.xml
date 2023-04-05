@@ -4,7 +4,7 @@
     <property name="LOG_LEVEL" value="INFO"/>
     <property name="LOG_PATH" value="logs"/>
     <property name="LOG_FILE_MAX_SIZE" value="20MB"/>
-    <property name="LOG_PATTERN" value="%d{HH:mm:ss.SSS} ${PID} [%thread] %-5level %logger.%method:%line --> %msg%n"/>
+    <property name="LOG_PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level %class:%line %msg%n"/>
 
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -16,11 +16,15 @@
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
-        <file>${LOG_PATH}/zzjroot.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+        <file>${LOG_PATH}/root.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <fileNamePattern>root.%i.gz</fileNamePattern>
-            <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
+            <minIndex>1</minIndex>
+            <maxIndex>5</maxIndex>
         </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
+        </triggeringPolicy>
     </appender>
 
     <appender name="zzjservice" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -28,18 +32,20 @@
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
         <file>${LOG_PATH}/zzjservice.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <fileNamePattern>zzjservice.%i.gz</fileNamePattern>
-            <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
+            <minIndex>1</minIndex>
+            <maxIndex>5</maxIndex>
         </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
+        </triggeringPolicy>
     </appender>
 
     <root level="${LOG_LEVEL}">
         <appender-ref ref="root"/>
-        <appender-ref ref="console"/>
     </root>
     <logger name="com.zzj.zzjservice" additivity="false" level="${LOG_LEVEL}">
         <appender-ref ref="zzjservice"/>
-        <appender-ref ref="console"/>
     </logger>
 </configuration>

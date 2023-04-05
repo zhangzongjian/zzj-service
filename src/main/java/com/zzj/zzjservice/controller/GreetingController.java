@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @RestController
 public class GreetingController {
 
-    private final static Logger logger = LoggerFactory.getLogger(GreetingController.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(GreetingController.class);
 
     private final AtomicLong counter = new AtomicLong();
 
@@ -23,7 +23,7 @@ public class GreetingController {
         Map<String, Object> map = new HashMap<>();
         map.put("hello", "name1");
         map.put("count", counter.getAndDecrement());
-        logger.info("greeting!");
+        LOGGER.info("greeting!");
         return map;
     }
 }
