@@ -18,7 +18,7 @@
         </encoder>
         <file>${LOG_PATH}/zzjroot.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>root.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <fileNamePattern>root.%i.gz</fileNamePattern>
             <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
         </rollingPolicy>
     </appender>
@@ -29,18 +29,7 @@
         </encoder>
         <file>${LOG_PATH}/zzjservice.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>zzjservice.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
-            <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
-        </rollingPolicy>
-    </appender>
-
-    <appender name="zzjtest" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <encoder>
-            <pattern>${LOG_PATTERN}</pattern>
-        </encoder>
-        <file>${LOG_PATH}/zzjtest.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>zzjtest.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <fileNamePattern>zzjservice.%i.gz</fileNamePattern>
             <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
         </rollingPolicy>
     </appender>
@@ -51,10 +40,6 @@
     </root>
     <logger name="com.zzj.zzjservice" additivity="false" level="${LOG_LEVEL}">
         <appender-ref ref="zzjservice"/>
-        <appender-ref ref="console"/>
-    </logger>
-    <logger name="com.zzj.zzjtest" additivity="false" level="${LOG_LEVEL}">
-        <appender-ref ref="zzjtest"/>
         <appender-ref ref="console"/>
     </logger>
 </configuration>
