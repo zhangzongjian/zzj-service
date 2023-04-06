@@ -4,7 +4,7 @@
     <property name="LOG_LEVEL" value="INFO"/>
     <property name="LOG_PATH" value="logs"/>
     <property name="LOG_FILE_MAX_SIZE" value="20MB"/>
-    <property name="LOG_PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level %class:%line %msg%n"/>
+    <property name="LOG_PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level %class:%line - %msg%n"/>
 
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
