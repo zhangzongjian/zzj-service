@@ -1,6 +1,6 @@
-package com.zzj.zzjservice.controller;
+package com.zzj.service.controller;
 
-import com.zzj.zzjservice.constant.RestConstant;
+import com.zzj.constant.RestConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;

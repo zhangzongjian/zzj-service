@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <property name="LOG_LEVEL" value="DEBUG"/>
+    <property name="LOG_LEVEL" value="INFO"/>
     <property name="LOG_PATH" value="logs"/>
     <property name="LOG_FILE_MAX_SIZE" value="20MB"/>
     <property name="LOG_PATTERN" value="%d{HH:mm:ss.SSS} [%thread] %-5level %class:%line - %msg%n"/>
@@ -27,11 +27,11 @@
         </triggeringPolicy>
     </appender>
 
-    <appender name="zzjservice" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="service" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
-        <file>${LOG_PATH}/zzjservice.log</file>
+        <file>${LOG_PATH}/service.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <fileNamePattern>zzjservice.%i.gz</fileNamePattern>
             <minIndex>1</minIndex>
@@ -44,8 +44,9 @@
 
     <root level="${LOG_LEVEL}">
         <appender-ref ref="root"/>
+        <appender-ref ref="console"/>
     </root>
-    <logger name="com.zzj.zzjservice" additivity="false" level="${LOG_LEVEL}">
-        <appender-ref ref="zzjservice"/>
+    <logger name="com.zzj.service" additivity="false" level="${LOG_LEVEL}">
+        <appender-ref ref="service"/>
     </logger>
 </configuration>

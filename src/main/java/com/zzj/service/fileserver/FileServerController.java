@@ -1,35 +1,39 @@
-package com.zzj.zzjservice.controller;
+package com.zzj.service.fileserver;
 
+import com.zzj.service.controller.AbstractController;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 
-@RestController
-public class FileUploadController {
+@Controller
+public class FileServerController extends AbstractController {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(FileUploadController.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(FileServerController.class);
 
-    @Autowired
-    private HttpServletRequest request;
+    @Value("${fileserver.download}")
+    private String serverRoot;
 
-    @Autowired
-    private HttpServletResponse response;
+    @Value("${fileserver.upload}")
+    private String uploadPath;
 
     @PostMapping("/upload")
+    @ResponseBody
     public String handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) {
         try {
-            String outputFile = "/tmp/zzj/upload/" + StringUtils.defaultIfEmpty(name, file.getOriginalFilename());
+            String outputFile = Paths.get(uploadPath, StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toString();
             copyFile(file.getInputStream(), outputFile);
         } catch (Exception e) {
             LOGGER.error("Upload failed", e);
@@ -56,5 +60,11 @@ public class FileUploadController {
                 }
             }
         }
+    }
+
+    @GetMapping("/fileserver/**")
+    public String handleFileServer(Model model) {
+        model.addAttribute("test", "hello");
+        return "fileserver/index";
     }
 }

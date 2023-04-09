@@ -1,4 +1,4 @@
-package com.zzj.zzjservice.constant;
+package com.zzj.constant;
 
 public class RestConstant {
 
