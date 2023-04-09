@@ -1,5 +1,6 @@
 package com.zzj.service.fileserver;
 
+import com.zzj.exception.PageNotFountException;
 import com.zzj.service.controller.AbstractController;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -13,15 +14,21 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Controller
 public class FileServerController extends AbstractController {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(FileServerController.class);
+
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm");
 
     @Value("${fileserver.download}")
     private String serverRoot;
@@ -64,7 +71,49 @@ public class FileServerController extends AbstractController {
 
     @GetMapping("/fileserver/**")
     public String handleFileServer(Model model) {
-        model.addAttribute("test", "hello");
+        String relativePath = request.getServletPath().replaceAll("/fileserver", "");
+        String absolutePath = Paths.get(serverRoot, relativePath).toString();
+        File[] files = new File(absolutePath).listFiles();
+        if (files == null) {
+            throw new PageNotFountException();
+        }
+        model.addAttribute("dataList", getDataList(files));
         return "fileserver/index";
+    }
+
+    private List<Map<String, Object>> getDataList(File[] files) {
+        List<Map<String, Object>> dataList = new ArrayList<>();
+        Arrays.sort(files, (file1, file2) -> {
+            if (file1.isDirectory() && !file2.isDirectory()) {
+                return -1;
+            } else if (!file1.isDirectory() && file2.isDirectory()) {
+                return 1;
+            } else {
+                return file1.getName().compareToIgnoreCase(file2.getName());
+            }
+        });
+        for (File file : files) {
+            Map<String, Object> fileProp = new HashMap<>();
+            fileProp.put("name", file.getName());
+            fileProp.put("lastModified", DATE_FORMAT.format(new Date(file.lastModified())));
+            fileProp.put("length", getHumanReadableFileSize(file));
+            dataList.add(fileProp);
+        }
+        return dataList;
+    }
+
+    private String getHumanReadableFileSize(File file) {
+        if (file.isDirectory()) {
+            return "";
+        }
+        long size = file.length();
+        String[] suffixes = new String[]{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
+        int orderOfMagnitude = 0;
+        while (size >= 1024 && orderOfMagnitude < suffixes.length - 1) {
+            size /= 1024;
+            orderOfMagnitude++;
+        }
+        DecimalFormat format = new DecimalFormat("#.#");
+        return format.format(size) + " " + suffixes[orderOfMagnitude];
     }
 }

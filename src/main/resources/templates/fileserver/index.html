@@ -1,10 +1,32 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8"/>
-    <title>Spring boot集成 Thymeleaf</title>
+    <title>文件服务器</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.staticfile.org/twitter-bootstrap/5.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/5.1.1/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
-<p th:text="${testx}">Spring boot集成 Thymeleaf</p>
+
+<div class="container mt-3">
+    <table class="table">
+        <thead>
+        <tr>
+            <th>名称</th>
+            <th>修改日期</th>
+            <th>文件大小</th>
+        </tr>
+        </thead>
+        <tbody th:each="data : ${dataList}">
+        <tr>
+            <td><a th:text="${data.name}" href="${data.name}">name</a></td>
+            <td th:text="${data.lastModified}">lastModified</td>
+            <td th:text="${data.length}">length</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
 </body>
 </html>
