@@ -1,11 +1,18 @@
-<!-- Include Bootstrap CSS and JS files -->
-<link rel="stylesheet" href="/bootstrap/3.3.7/css/bootstrap.min.css">
-<script src="/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-
-<!-- Create a basic 500 error page using Bootstrap -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>500 Internal Server Error</title>
+    <link rel="stylesheet" href="/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
 <div class="container">
     <div class="jumbotron">
         <h1>500 Internal Server Error</h1>
         <p>Sorry, something went wrong on our end. Please try again later.</p>
+        <a href="javascript:window.history.back()" class="btn btn-primary">Go back</a>
     </div>
 </div>
+</body>
+</html>

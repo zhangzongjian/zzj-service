@@ -10,19 +10,30 @@
 <body>
 
 <div class="container mt-3">
+    <a th:href="${rootPath}">首页</a>&nbsp;&nbsp;&nbsp;
+    <a th:href="${lastPath}">上一目录</a>
+    <form style="float:right" th:action="${rootPath}" method="get">
+        <input style="width:480px" name="search" onfocus="this.select()" placeholder="搜索" autofocus=""
+               th:value="${search}"/>
+    </form>
     <table class="table">
         <thead>
         <tr>
             <th>名称</th>
-            <th>修改日期</th>
+            <th>路径</th>
             <th>文件大小</th>
+            <th>修改日期</th>
         </tr>
         </thead>
         <tbody th:each="data : ${dataList}">
         <tr>
-            <td><a th:text="${data.name}" href="${data.name}">name</a></td>
+            <td><a th:style="${data.style}" th:text="${data.name}" th:href="${data.path}">name</a></td>
+            <td th:text="${data.path}">path</td>
+            <td th:if="${!#strings.isEmpty(data.length)}" th:text="${data.length}">length</td>
+            <td th:if="${#strings.isEmpty(data.length)}"><a th:style="${data.style}"
+                                                            th:href="${data.path + '?download'}">下载</a>
+            </td>
             <td th:text="${data.lastModified}">lastModified</td>
-            <td th:text="${data.length}">length</td>
         </tr>
         </tbody>
     </table>

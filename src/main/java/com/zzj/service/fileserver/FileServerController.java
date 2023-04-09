@@ -1,7 +1,10 @@
 package com.zzj.service.fileserver;
 
-import com.zzj.exception.PageNotFountException;
 import com.zzj.service.controller.AbstractController;
+import com.zzj.util.StringUtil;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.AbstractFileFilter;
+import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,10 +17,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -70,20 +71,70 @@ public class FileServerController extends AbstractController {
     }
 
     @GetMapping("/fileserver/**")
-    public String handleFileServer(Model model) {
-        String relativePath = request.getServletPath().replaceAll("/fileserver", "");
-        String absolutePath = Paths.get(serverRoot, relativePath).toString();
-        File[] files = new File(absolutePath).listFiles();
-        if (files == null) {
-            throw new PageNotFountException();
+    public String handleFileServer(Model model, @RequestParam(value = "search", required = false) String search) {
+        String rootPath = "/fileserver";
+        String servletPath = request.getServletPath();
+        String lastPath = servletPath.substring(0, servletPath.lastIndexOf('/'));
+        String relativePath = servletPath.replaceAll(rootPath, "");
+        File file = Paths.get(serverRoot, relativePath).toFile();
+        if (file.isFile() || request.getParameterMap().containsKey("download")) {
+            return download(file);
         }
-        model.addAttribute("dataList", getDataList(files));
+        List<File> files = listFiles(file, search);
+        model.addAttribute("search", search);
+        model.addAttribute("rootPath", rootPath);
+        model.addAttribute("lastPath", lastPath.startsWith(rootPath) ? lastPath : rootPath);
+        model.addAttribute("dataList", getDataList(rootPath, files));
         return "fileserver/index";
     }
 
-    private List<Map<String, Object>> getDataList(File[] files) {
+    private List<File> listFiles(File directory, String search) {
+        Set<File> resultList = new HashSet<>();
+        File[] files = directory.listFiles();
+        if (files == null) {
+            return Collections.emptyList();
+        }
+        if (StringUtils.isBlank(search)) {
+            return Arrays.asList(files);
+        }
+
+        String[] searchs = search.split(" +");
+        IOFileFilter fileFilter = new AbstractFileFilter() {
+            @Override
+            public boolean accept(File file) {
+                if (StringUtil.containsAllIgnoreCase(file.getName(), searchs)) {
+                    resultList.add(file);
+                }
+                return true;
+            }
+        };
+        FileUtils.listFilesAndDirs(directory, fileFilter, fileFilter);
+        return new ArrayList<>(resultList);
+    }
+
+    private String download(File file) {
+        response.setContentType("application/octet-stream");
+        response.setHeader("Content-Disposition", "attachment; filename=" + file.getName());
+        try (InputStream inputStream = Files.newInputStream(file.toPath())) {
+            OutputStream outputStream = response.getOutputStream();
+            byte[] buffer = new byte[4096];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+            outputStream.flush();
+            return "success";
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<Map<String, Object>> getDataList(String rootPath, List<File> files) {
         List<Map<String, Object>> dataList = new ArrayList<>();
-        Arrays.sort(files, (file1, file2) -> {
+        if (files == null) {
+            return dataList;
+        }
+        files.sort((file1, file2) -> {
             if (file1.isDirectory() && !file2.isDirectory()) {
                 return -1;
             } else if (!file1.isDirectory() && file2.isDirectory()) {
@@ -97,6 +148,8 @@ public class FileServerController extends AbstractController {
             fileProp.put("name", file.getName());
             fileProp.put("lastModified", DATE_FORMAT.format(new Date(file.lastModified())));
             fileProp.put("length", getHumanReadableFileSize(file));
+            fileProp.put("path", rootPath + file.getAbsolutePath().substring(serverRoot.length()).replaceAll("\\\\", "/"));
+            fileProp.put("style", file.isFile() ? "color:black" : "");
             dataList.add(fileProp);
         }
         return dataList;
