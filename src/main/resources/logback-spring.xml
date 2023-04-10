@@ -18,7 +18,7 @@
         </encoder>
         <file>${LOG_PATH}/root.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>root.%i.gz</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/root.%i.gz</fileNamePattern>
             <minIndex>1</minIndex>
             <maxIndex>5</maxIndex>
         </rollingPolicy>
@@ -33,7 +33,7 @@
         </encoder>
         <file>${LOG_PATH}/service.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>zzjservice.%i.gz</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/service.%i.gz</fileNamePattern>
             <minIndex>1</minIndex>
             <maxIndex>5</maxIndex>
         </rollingPolicy>

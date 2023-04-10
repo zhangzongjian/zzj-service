@@ -2,8 +2,10 @@ package com.zzj.service.fileserver;
 
 import com.zzj.service.controller.AbstractController;
 import com.zzj.util.StringUtil;
+import com.zzj.util.ZipUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AbstractFileFilter;
+import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -89,7 +91,7 @@ public class FileServerController extends AbstractController {
     }
 
     private List<File> listFiles(File directory, String search) {
-        Set<File> resultList = new HashSet<>();
+        List<File> resultList = new ArrayList<>();
         File[] files = directory.listFiles();
         if (files == null) {
             return Collections.emptyList();
@@ -108,11 +110,17 @@ public class FileServerController extends AbstractController {
                 return true;
             }
         };
-        FileUtils.listFilesAndDirs(directory, fileFilter, fileFilter);
+        FileUtils.listFilesAndDirs(directory, fileFilter, DirectoryFileFilter.INSTANCE);
         return new ArrayList<>(resultList);
     }
 
     private String download(File file) {
+        File tmpFile = null;
+        if (file.isDirectory()) {
+            tmpFile = new File("tmp", file.getName() + ".zip");
+            ZipUtil.compress(file, tmpFile);
+            file = tmpFile;
+        }
         response.setContentType("application/octet-stream");
         response.setHeader("Content-Disposition", "attachment; filename=" + file.getName());
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
@@ -126,6 +134,8 @@ public class FileServerController extends AbstractController {
             return "success";
         } catch (IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            FileUtils.deleteQuietly(tmpFile);
         }
     }
 
