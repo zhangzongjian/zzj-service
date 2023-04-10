@@ -1,6 +1,7 @@
 package com.zzj.service.fileserver;
 
 import com.zzj.service.controller.AbstractController;
+import com.zzj.util.ConfigUtil;
 import com.zzj.util.StringUtil;
 import com.zzj.util.ZipUtil;
 import org.apache.commons.io.FileUtils;
@@ -9,7 +10,6 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,17 +32,11 @@ public class FileServerController extends AbstractController {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm");
 
-    @Value("${fileserver.download}")
-    private String serverRoot;
-
-    @Value("${fileserver.upload}")
-    private String uploadPath;
-
     @PostMapping("/upload")
     @ResponseBody
     public String handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) {
         try {
-            String outputFile = Paths.get(uploadPath, StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toString();
+            String outputFile = Paths.get(getUploadFileRoot(), StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toString();
             copyFile(file.getInputStream(), outputFile);
         } catch (Exception e) {
             LOGGER.error("Upload failed", e);
@@ -77,7 +71,7 @@ public class FileServerController extends AbstractController {
         String servletPath = request.getServletPath();
         String lastPath = servletPath.substring(0, servletPath.lastIndexOf('/'));
         String relativePath = servletPath.replaceAll(rootPath, "");
-        File file = Paths.get(serverRoot, relativePath).toFile();
+        File file = Paths.get(getServerFileRoot(), relativePath).toFile();
         if (file.isFile() || request.getParameterMap().containsKey("download")) {
             return download(file);
         }
@@ -89,6 +83,14 @@ public class FileServerController extends AbstractController {
         model.addAttribute("dataList", dataList);
         model.addAttribute("dataSize", dataList.size());
         return "fileserver/index";
+    }
+
+    private String getServerFileRoot() {
+        return ConfigUtil.getProperty("fileserver.download");
+    }
+
+    private String getUploadFileRoot() {
+        return ConfigUtil.getProperty("fileserver.upload");
     }
 
     private List<File> listFiles(File directory, String search) {
@@ -159,7 +161,7 @@ public class FileServerController extends AbstractController {
             fileProp.put("name", file.getName());
             fileProp.put("lastModified", DATE_FORMAT.format(new Date(file.lastModified())));
             fileProp.put("length", getHumanReadableFileSize(file));
-            fileProp.put("path", rootPath + file.getAbsolutePath().substring(serverRoot.length()).replaceAll("\\\\", "/"));
+            fileProp.put("path", rootPath + file.getAbsolutePath().substring(getServerFileRoot().length()).replaceAll("\\\\", "/"));
             fileProp.put("style", file.isFile() ? "color:black" : "");
             dataList.add(fileProp);
         }

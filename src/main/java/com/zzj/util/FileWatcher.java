@@ -1,27 +1,69 @@
 package com.zzj.util;
 
 
+import com.zzj.util.filewatcher.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.*;
+import java.util.*;
 
 public class FileWatcher {
-    public static void main(String[] args) throws Exception {
-        // 获取要监听的文件路径
-        Path path = Paths.get("C:\\Users\\jian\\cursor-tutor\\");
+    private final static Logger LOGGER = LoggerFactory.getLogger(FileWatcher.class);
 
-        // 获取文件系统的 WatchService 对象
-        WatchService watchService = FileSystems.getDefault().newWatchService();
+    private static final Map<File, List<Watcher>> WATCHER_MAP = new HashMap<>();
 
-        // 注册监听器
-        path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
+    private static final WatchService watchService;
 
-        // 循环监听
-        while (true) {
-            WatchKey watchKey = watchService.take();
-            for (WatchEvent<?> event : watchKey.pollEvents()) {
-                // 处理事件
-                System.out.println("Event kind:" + event.kind() + ". File affected: " + event.context() + ".");
+    static {
+        watchService = newWatchService();
+        new Thread() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        WatchKey key = watchService.take();
+                        for (WatchEvent<?> event : key.pollEvents()) {
+                            Path eventPath = (Path) event.context();
+                            Path eventDir = (Path) key.watchable();
+                            File file = Paths.get(eventDir.toString(), eventPath.toString()).toFile();
+                            handleFile(file);
+                            LOGGER.info("Event kind:{}. File affected: {}.", event.kind(), file);
+                        }
+                        key.reset();
+                    } catch (Exception e) {
+                        throw new RuntimeException("File watcher error.", e);
+                    }
+                }
+
             }
-            watchKey.reset();
+        }.start();
+    }
+
+    private static void handleFile(File file) {
+        List<Watcher> list = WATCHER_MAP.getOrDefault(file, Collections.emptyList());
+        for (Watcher watcher : list) {
+            try {
+                watcher.handle();
+            } catch (Exception e) {
+                LOGGER.error("File watcher handle error. " + file, e);
+            }
         }
+    }
+
+    private static WatchService newWatchService() {
+        try {
+            return FileSystems.getDefault().newWatchService();
+        } catch (IOException e) {
+            throw new RuntimeException("Init watch service error.", e);
+        }
+    }
+
+    public static void register(Watcher watcher) throws IOException {
+        Path path = Paths.get(watcher.getFile()).getParent();
+        path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
+        WATCHER_MAP.computeIfAbsent(new File(watcher.getFile()), key -> new ArrayList<>()).add(watcher);
     }
 }
