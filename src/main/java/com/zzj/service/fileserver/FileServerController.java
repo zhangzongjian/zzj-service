@@ -82,10 +82,12 @@ public class FileServerController extends AbstractController {
             return download(file);
         }
         List<File> files = listFiles(file, search);
+        List<Map<String, Object>> dataList = getDataList(rootPath, files);
         model.addAttribute("search", search);
         model.addAttribute("rootPath", rootPath);
         model.addAttribute("lastPath", lastPath.startsWith(rootPath) ? lastPath : rootPath);
-        model.addAttribute("dataList", getDataList(rootPath, files));
+        model.addAttribute("dataList", dataList);
+        model.addAttribute("dataSize", dataList.size());
         return "fileserver/index";
     }
 

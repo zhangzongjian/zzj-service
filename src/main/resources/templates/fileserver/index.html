@@ -11,7 +11,8 @@
 
 <div class="container mt-3">
     <a th:href="${rootPath}">首页</a>&nbsp;&nbsp;&nbsp;
-    <a th:href="${lastPath}">上一目录</a>
+    <a th:href="${lastPath}">上一目录</a>&nbsp;&nbsp;&nbsp;
+    <b th:text="${dataSize + ' 个项目'}">0 个项目</b>
     <form style="float:right" th:action="${rootPath}" method="get">
         <input style="width:480px" name="search" onfocus="this.select()" placeholder="搜索" autofocus=""
                th:value="${search}"/>
