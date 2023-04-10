@@ -5,7 +5,6 @@ import com.zzj.util.StringUtil;
 import com.zzj.util.ZipUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AbstractFileFilter;
-import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -91,7 +90,7 @@ public class FileServerController extends AbstractController {
     }
 
     private List<File> listFiles(File directory, String search) {
-        List<File> resultList = new ArrayList<>();
+        Set<File> resultList = new HashSet<>();
         File[] files = directory.listFiles();
         if (files == null) {
             return Collections.emptyList();
@@ -110,7 +109,7 @@ public class FileServerController extends AbstractController {
                 return true;
             }
         };
-        FileUtils.listFilesAndDirs(directory, fileFilter, DirectoryFileFilter.INSTANCE);
+        FileUtils.listFilesAndDirs(directory, fileFilter, fileFilter);
         return new ArrayList<>(resultList);
     }
 
