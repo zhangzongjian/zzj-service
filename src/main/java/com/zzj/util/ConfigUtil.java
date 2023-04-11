@@ -3,12 +3,15 @@ package com.zzj.util;
 import com.zzj.util.filewatcher.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
@@ -17,44 +20,63 @@ public class ConfigUtil {
 
     private static final Properties PROPERTIES = new Properties();
 
-    private static final String CONFIT_FILE = Paths.get("config", "application.properties").toString();
+    private static final Path CONFIG_FILE = Paths.get("config", "application.properties");
 
     static {
         try {
-            FileWatcher.register(new Watcher(getConfigFile().getPath()) {
-                @Override
-                public void handle() {
-                    init();
-                }
-            });
+            init();
+            registerWatcher();
         } catch (Exception e) {
             throw new RuntimeException("Init config util error.", e);
         }
     }
 
-    private static File getConfigFile() {
-        File parent = new File(System.getProperty("java.class.path")).getParentFile();
-        File config = Paths.get(parent.getPath(), CONFIT_FILE).toFile();
-        if (!config.exists()) {
-            config = new File(ConfigUtil.class.getClassLoader().getResource(config.getName()).getFile());
+    private static void registerWatcher() throws IOException {
+        File configFile = getConfigFile();
+        if (configFile == null) {
+            return;
         }
-        return config;
+        FileWatcher.register(new Watcher(getConfigFile().getPath()) {
+            @Override
+            public void handle() {
+                init();
+            }
+        });
     }
 
+    private static File getConfigFile() {
+        File parent = new File(System.getProperty("java.class.path").split(";")[0]).getParentFile();
+        File config = Paths.get(parent.getAbsolutePath(), CONFIG_FILE.toString()).toFile();
+        return config.exists() ? config : null;
+    }
+
+    /**
+     * 优先加载包外面的config/application.properties
+     */
     private static void init() {
-        File config = getConfigFile();
-        LOGGER.info("Init config from {}", config);
-        try (InputStreamReader reader = new InputStreamReader(Files.newInputStream(config.toPath()), StandardCharsets.UTF_8)) {
+        try {
+            File config = getConfigFile();
+            InputStream in;
+            if (config != null) {
+                LOGGER.info("Init config from {}", config);
+                in = Files.newInputStream(config.toPath());
+            } else {
+                String fileName = CONFIG_FILE.getFileName().toString();
+                ClassPathResource resource = new ClassPathResource(fileName);
+                LOGGER.info("Init config from {}", resource.getURL());
+                in = resource.getInputStream();
+            }
+            InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
             PROPERTIES.load(reader);
-        } catch (IOException e) {
-            throw new RuntimeException("Init config error", e);
+        } catch (Exception e) {
+            LOGGER.error("Init config util error.", e);
         }
     }
 
     public static String getProperty(String key) {
         String value = PROPERTIES.getProperty(key);
         if (value == null) {
-            throw new NullPointerException(StringUtil.format("Property[{}] is not exits in {}", key, CONFIT_FILE));
+            throw new NullPointerException(StringUtil.format("Property[{}] is not exits in {}", key, CONFIG_FILE));
         }
         return value;
     }

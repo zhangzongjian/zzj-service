@@ -62,6 +62,7 @@ public class FileWatcher {
     }
 
     public static void register(Watcher watcher) throws IOException {
+        LOGGER.info("Register file watcher. {}", watcher.getFile());
         Path path = Paths.get(watcher.getFile()).getParent();
         path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
         WATCHER_MAP.computeIfAbsent(new File(watcher.getFile()), key -> new ArrayList<>()).add(watcher);

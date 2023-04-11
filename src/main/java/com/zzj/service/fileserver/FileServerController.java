@@ -86,11 +86,11 @@ public class FileServerController extends AbstractController {
     }
 
     private String getServerFileRoot() {
-        return ConfigUtil.getProperty("fileserver.download");
+        return Paths.get(ConfigUtil.getProperty("fileserver.download")).toString();
     }
 
     private String getUploadFileRoot() {
-        return ConfigUtil.getProperty("fileserver.upload");
+        return Paths.get(ConfigUtil.getProperty("fileserver.upload")).toString();
     }
 
     private List<File> listFiles(File directory, String search) {

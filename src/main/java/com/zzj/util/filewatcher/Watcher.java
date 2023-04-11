@@ -13,5 +13,5 @@ public abstract class Watcher {
         this.file = file;
     }
 
-    public abstract void handle();
+    public abstract void handle() throws Exception;
 }
