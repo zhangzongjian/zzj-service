@@ -63,7 +63,7 @@ public class ConfigUtil {
             } else {
                 String fileName = CONFIG_FILE.getFileName().toString();
                 ClassPathResource resource = new ClassPathResource(fileName);
-                LOGGER.info("Init config from {}", resource.getURL());
+                LOGGER.info("Init config from classpath: {}", resource.getURL());
                 in = resource.getInputStream();
             }
             InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
