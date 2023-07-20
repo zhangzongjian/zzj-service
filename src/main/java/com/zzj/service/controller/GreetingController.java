@@ -6,7 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Enumeration;
@@ -101,22 +104,22 @@ public class GreetingController {
     }
 
     private static void processFileEntry(ZipFile zipFile, ZipEntry entry, File entryDestination, String checkDir) throws IOException {
-        if (entryDestination.getCanonicalPath().startsWith(new File(checkDir).getCanonicalPath())) {
-            entryDestination.getParentFile().mkdirs();
-            try (InputStream in = zipFile.getInputStream(entry); OutputStream out = new FileOutputStream(entryDestination)) {
-                byte[] buffer = new byte[1024];
-                int length;
-                long totalBytesRead = 0;
-                while ((length = in.read(buffer)) > 0) {
-                    totalBytesRead += length;
-                    if (totalBytesRead > 1000000000) {
-                        throw new IOException("Potential zip bomb detected.");
-                    }
-                    out.write(buffer, 0, length);
-                }
-            }
-        } else {
+        if (!entryDestination.getCanonicalPath().startsWith(new File(checkDir).getCanonicalPath())) {
             throw new IOException("Potential zip slip detected.");
+        }
+        entryDestination.getParentFile().mkdirs();
+        try (InputStream in = zipFile.getInputStream(entry);
+             OutputStream out = Files.newOutputStream(entryDestination.toPath())) {
+            byte[] buffer = new byte[1024];
+            int length;
+            long totalBytesRead = 0;
+            while ((length = in.read(buffer)) > 0) {
+                totalBytesRead += length;
+                if (totalBytesRead > 1000000000) {
+                    throw new IOException("Potential zip bomb detected.");
+                }
+                out.write(buffer, 0, length);
+            }
         }
     }
 
