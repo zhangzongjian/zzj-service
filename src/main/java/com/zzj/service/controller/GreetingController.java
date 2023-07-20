@@ -7,9 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -51,25 +53,29 @@ public class GreetingController {
     }
 
     public static void zip(String zipFileName, String dirPath) {
-        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipFileName))) {
-            Arrays.stream(Optional.ofNullable(new File(dirPath).listFiles()).orElse(new File[0])).forEach(file -> zipFile(file, zos));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void zipFile(File file, ZipOutputStream zos) {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            zos.putNextEntry(new ZipEntry(file.getName()));
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = fis.read(buffer)) > 0) {
-                zos.write(buffer, 0, len);
+        try {
+            Path sourceDir = Paths.get(dirPath);
+            try (ZipOutputStream outputStream = new ZipOutputStream(Files.newOutputStream(Paths.get(zipFileName)))) {
+                Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
+                        try {
+                            Path targetFile = sourceDir.relativize(file);
+                            outputStream.putNextEntry(new ZipEntry(targetFile.toString()));
+                            byte[] bytes = Files.readAllBytes(file);
+                            outputStream.write(bytes, 0, bytes.length);
+                            outputStream.closeEntry();
+                        } catch (IOException e) {
+                            System.err.println(e);
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
             }
-            zos.closeEntry();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error creating zip file: " + e);
         }
+
     }
 
     public static void unzip(String zipFileName, String dirPath) {
