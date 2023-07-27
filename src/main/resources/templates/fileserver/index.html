@@ -5,19 +5,37 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.staticfile.org/twitter-bootstrap/5.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.staticfile.org/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.staticfile.org/twitter-bootstrap/5.1.1/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 960px;
+        }
+        .table {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container mt-3">
-    <a th:href="${rootPath}">首页</a>&nbsp;&nbsp;&nbsp;
-    <a th:href="${lastPath}">上一目录</a>&nbsp;&nbsp;&nbsp;
-    <b th:text="${dataSize + ' 个项目'}">0 个项目</b>
+    <a class="btn btn-primary" th:href="${rootPath}"><i class="fas fa-home"></i> 首页</a>&nbsp;&nbsp;&nbsp;
+    <a class="btn btn-primary" th:href="${lastPath}"><i class="fas fa-arrow-left"></i> 上一目录</a>&nbsp;&nbsp;&nbsp;
+    <form th:action="${uploadPath}" method="post" enctype="multipart/form-data" class="d-inline-block">
+        <div class="input-group">
+            <input type="file" name="file" class="form-control"/>
+            <button type="submit" class="btn btn-success">上传文件</button>
+        </div>
+    </form>
+    <b th:text="${dataSize + ' 个项目'}" class="text-muted">0 个项目</b>
     <form style="float:right" th:action="${rootPath}" method="get">
         <input style="width:480px" name="search" onfocus="this.select()" placeholder="搜索" autofocus=""
-               th:value="${search}"/>
+               th:value="${search}" class="form-control"/>
     </form>
-    <table class="table">
+    <table class="table table-striped">
         <thead>
         <tr>
             <th>名称</th>
