@@ -17,6 +17,7 @@
 
 
 
+
     </style>
 </head>
 <body>
@@ -73,7 +74,7 @@
             <td th:text="${data.lastModified}">修改日期</td>
             <td>
                 <a th:href="${data.path + '?download'}">下载</a>
-                <a th:href="${data.path + '?view'}">查看</a>
+                <a th:href="${data.path + '?view'}" target="_blank">查看</a>
                 <a th:href="${data.path + '?delete'}">删除</a>
             </td>
         </tr>

@@ -10,7 +10,6 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,7 +37,6 @@ public class FileServerController extends AbstractController {
 
     @PostMapping("/upload")
     @ResponseBody
-    @Async
     public String handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) throws Exception {
         File outputFile = Paths.get(getUploadFileRoot(), StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toFile();
         copyFile(file.getInputStream(), outputFile);
@@ -60,7 +58,6 @@ public class FileServerController extends AbstractController {
                 bytesCopied += bytesInBuffer;
                 int progress = (int) ((double) bytesCopied / fileSize * 100);
                 if (progress != oldProgress && progress % 5 == 0) {
-                    Thread.sleep(500);
                     oldProgress = progress;
                     response.getOutputStream().println("Progress: " + progress + "%");
                     response.getOutputStream().flush();
@@ -74,19 +71,36 @@ public class FileServerController extends AbstractController {
         String rootPath = "/fileserver";
         String servletPath = request.getServletPath();
         String lastPath = servletPath.substring(0, servletPath.lastIndexOf('/'));
+        lastPath = lastPath.startsWith(rootPath) ? lastPath : rootPath;
         String relativePath = servletPath.replaceAll(rootPath, "");
         File file = Paths.get(getServerFileRoot(), relativePath).toFile();
-        if (file.isFile() || request.getParameterMap().containsKey("download")) {
-            return download(file);
+        String page = "fileserver/index";
+        if (request.getParameterMap().containsKey("download")) {
+            download(file);
+            return page;
         }
-        List<File> files = listFiles(file, search);
-        List<FileProp> dataList = getDataList(rootPath, files);
-        model.addAttribute("search", search);
-        model.addAttribute("rootPath", rootPath);
-        model.addAttribute("lastPath", lastPath.startsWith(rootPath) ? lastPath : rootPath);
-        model.addAttribute("dataList", dataList);
-        model.addAttribute("dataSize", dataList.size());
-        return "fileserver/index";
+        if (request.getParameterMap().containsKey("view")) {
+            view(file);
+            return page;
+        }
+        if (request.getParameterMap().containsKey("delete")) {
+            FileUtils.deleteQuietly(file);
+            response.sendRedirect(lastPath);
+            return page;
+        }
+        if (file.isDirectory()) {
+            List<File> files = listFiles(file, search);
+            List<FileProp> dataList = getDataList(rootPath, files);
+            model.addAttribute("search", search);
+            model.addAttribute("rootPath", rootPath);
+            model.addAttribute("lastPath", lastPath);
+            model.addAttribute("dataList", dataList);
+            model.addAttribute("dataSize", dataList.size());
+        } else {
+            download(file);
+            return page;
+        }
+        return page;
     }
 
     private String getServerFileRoot() {
@@ -121,7 +135,7 @@ public class FileServerController extends AbstractController {
         return new ArrayList<>(resultList);
     }
 
-    private String download(File file) throws Exception {
+    private void download(File file) throws Exception {
         File tmpFile = null;
         if (file.isDirectory()) {
             tmpFile = new File("tmp", file.getName() + ".zip");
@@ -130,6 +144,14 @@ public class FileServerController extends AbstractController {
         }
         response.setContentType("application/octet-stream");
         response.setHeader("Content-Disposition", "attachment; filename=" + new String(file.getName().getBytes(), StandardCharsets.ISO_8859_1));
+        try {
+            view(file);
+        } finally {
+            FileUtils.deleteQuietly(tmpFile);
+        }
+    }
+
+    private void view(File file) throws Exception {
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             OutputStream outputStream = response.getOutputStream();
             byte[] buffer = new byte[4096];
@@ -138,9 +160,6 @@ public class FileServerController extends AbstractController {
                 outputStream.write(buffer, 0, length);
             }
             outputStream.flush();
-            return "success";
-        } finally {
-            FileUtils.deleteQuietly(tmpFile);
         }
     }
 
