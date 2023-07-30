@@ -10,6 +10,8 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +28,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Controller
+@EnableAsync
 public class FileServerController extends AbstractController {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(FileServerController.class);
@@ -34,9 +37,10 @@ public class FileServerController extends AbstractController {
 
     @PostMapping("/upload")
     @ResponseBody
+    @Async
     public String handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) {
         try {
-            String outputFile = Paths.get(getUploadFileRoot(), StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toString();
+            File outputFile = Paths.get(getUploadFileRoot(), StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toFile();
             copyFile(file.getInputStream(), outputFile);
         } catch (Exception e) {
             LOGGER.error("Upload failed", e);
@@ -44,7 +48,7 @@ public class FileServerController extends AbstractController {
         return "";
     }
 
-    private void copyFile(InputStream in, String outputFile) throws IOException {
+    private void copyFile(InputStream in, File outputFile) throws IOException, InterruptedException {
         try (FileOutputStream out = new FileOutputStream(outputFile)) {
             long fileSize = in.available();
             int bufferSize = 4096;
@@ -52,11 +56,14 @@ public class FileServerController extends AbstractController {
             long bytesCopied = 0;
             int bytesInBuffer;
             int oldProgress = 0;
+            response.getOutputStream().println("Progress: " + outputFile.getName() + " Size: " + getHumanReadableFileSize(fileSize));
+            response.getOutputStream().flush();
             while ((bytesInBuffer = in.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesInBuffer);
                 bytesCopied += bytesInBuffer;
                 int progress = (int) ((double) bytesCopied / fileSize * 100);
                 if (progress != oldProgress && progress % 5 == 0) {
+                    Thread.sleep(500);
                     oldProgress = progress;
                     response.getOutputStream().println("Progress: " + progress + "%");
                     response.getOutputStream().flush();
@@ -76,7 +83,7 @@ public class FileServerController extends AbstractController {
             return download(file);
         }
         List<File> files = listFiles(file, search);
-        List<Map<String, Object>> dataList = getDataList(rootPath, files);
+        List<FileProp> dataList = getDataList(rootPath, files);
         model.addAttribute("search", search);
         model.addAttribute("rootPath", rootPath);
         model.addAttribute("lastPath", lastPath.startsWith(rootPath) ? lastPath : rootPath);
@@ -142,8 +149,8 @@ public class FileServerController extends AbstractController {
         }
     }
 
-    private List<Map<String, Object>> getDataList(String rootPath, List<File> files) {
-        List<Map<String, Object>> dataList = new ArrayList<>();
+    private List<FileProp> getDataList(String rootPath, List<File> files) {
+        List<FileProp> dataList = new ArrayList<>();
         if (files == null) {
             return dataList;
         }
@@ -157,12 +164,12 @@ public class FileServerController extends AbstractController {
             }
         });
         for (File file : files) {
-            Map<String, Object> fileProp = new HashMap<>();
-            fileProp.put("name", file.getName());
-            fileProp.put("lastModified", DATE_FORMAT.format(new Date(file.lastModified())));
-            fileProp.put("length", getHumanReadableFileSize(file));
-            fileProp.put("path", rootPath + file.getAbsolutePath().substring(getServerFileRoot().length()).replaceAll("\\\\", "/"));
-            fileProp.put("style", file.isFile() ? "color:black" : "");
+            FileProp fileProp = new FileProp();
+            fileProp.setName(file.getName());
+            fileProp.setLastModified(DATE_FORMAT.format(new Date(file.lastModified())));
+            fileProp.setLength(getHumanReadableFileSize(file));
+            fileProp.setPath(rootPath + file.getAbsolutePath().substring(getServerFileRoot().length()).replaceAll("\\\\", "/"));
+            fileProp.setStyle(file.isFile() ? "color:black" : "");
             dataList.add(fileProp);
         }
         return dataList;
@@ -172,7 +179,10 @@ public class FileServerController extends AbstractController {
         if (file.isDirectory()) {
             return "";
         }
-        long size = file.length();
+        return getHumanReadableFileSize(file.length());
+    }
+
+    private String getHumanReadableFileSize(long size) {
         String[] suffixes = new String[]{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
         int orderOfMagnitude = 0;
         while (size >= 1024 && orderOfMagnitude < suffixes.length - 1) {
