@@ -13,6 +13,10 @@
         }
 
 
+
+
+
+
     </style>
 </head>
 <body>
@@ -64,11 +68,14 @@
         <tr>
             <td><a th:style="${data.style}" th:text="${data.name}" th:href="${data.path}">名称</a></td>
             <td th:text="${data.path}">路径</td>
-            <td th:if="${!#strings.isEmpty(data.length)}" th:text="${data.length}">文件大小</td>
-            <td th:if="${#strings.isEmpty(data.length)}"><a th:style="${data.style}"
-                                                            th:href="${data.path + '?download'}">下载</a></td>
+            <td th:text="${data.length}">文件大小</td>
+            <td th:if="${#strings.isEmpty(data.length)}"></td>
             <td th:text="${data.lastModified}">修改日期</td>
-            <td>操作</td>
+            <td>
+                <a th:href="${data.path + '?download'}">下载</a>
+                <a th:href="${data.path + '?view'}">查看</a>
+                <a th:href="${data.path + '?delete'}">删除</a>
+            </td>
         </tr>
         </tbody>
     </table>

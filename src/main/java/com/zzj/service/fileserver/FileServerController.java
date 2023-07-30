@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
@@ -38,13 +39,9 @@ public class FileServerController extends AbstractController {
     @PostMapping("/upload")
     @ResponseBody
     @Async
-    public String handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) {
-        try {
-            File outputFile = Paths.get(getUploadFileRoot(), StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toFile();
-            copyFile(file.getInputStream(), outputFile);
-        } catch (Exception e) {
-            LOGGER.error("Upload failed", e);
-        }
+    public String handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) throws Exception {
+        File outputFile = Paths.get(getUploadFileRoot(), StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toFile();
+        copyFile(file.getInputStream(), outputFile);
         return "";
     }
 
@@ -73,7 +70,7 @@ public class FileServerController extends AbstractController {
     }
 
     @GetMapping("/fileserver/**")
-    public String handleFileServer(Model model, @RequestParam(value = "search", required = false) String search) {
+    public String handleFileServer(Model model, @RequestParam(value = "search", required = false) String search) throws Exception {
         String rootPath = "/fileserver";
         String servletPath = request.getServletPath();
         String lastPath = servletPath.substring(0, servletPath.lastIndexOf('/'));
@@ -124,7 +121,7 @@ public class FileServerController extends AbstractController {
         return new ArrayList<>(resultList);
     }
 
-    private String download(File file) {
+    private String download(File file) throws Exception {
         File tmpFile = null;
         if (file.isDirectory()) {
             tmpFile = new File("tmp", file.getName() + ".zip");
@@ -132,7 +129,7 @@ public class FileServerController extends AbstractController {
             file = tmpFile;
         }
         response.setContentType("application/octet-stream");
-        response.setHeader("Content-Disposition", "attachment; filename=" + file.getName());
+        response.setHeader("Content-Disposition", "attachment; filename=" + new String(file.getName().getBytes(), StandardCharsets.ISO_8859_1));
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             OutputStream outputStream = response.getOutputStream();
             byte[] buffer = new byte[4096];
@@ -142,8 +139,6 @@ public class FileServerController extends AbstractController {
             }
             outputStream.flush();
             return "success";
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         } finally {
             FileUtils.deleteQuietly(tmpFile);
         }
@@ -175,9 +170,27 @@ public class FileServerController extends AbstractController {
         return dataList;
     }
 
+    private long getDirectorySize(File directory) {
+        long size = 0;
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        size += file.length();
+                    } else {
+                        size += getDirectorySize(file);
+                    }
+                }
+            }
+        }
+        return size;
+    }
+
+
     private String getHumanReadableFileSize(File file) {
         if (file.isDirectory()) {
-            return "";
+            return getHumanReadableFileSize(getDirectorySize(file));
         }
         return getHumanReadableFileSize(file.length());
     }
