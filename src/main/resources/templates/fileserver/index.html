@@ -17,24 +17,44 @@
         .table {
             margin-top: 20px;
         }
+
+
+
+
+
+
+
+
+
+
     </style>
 </head>
 <body>
 
 <div class="container mt-3">
-    <a class="btn btn-primary" th:href="${rootPath}"><i class="fas fa-home"></i> 首页</a>&nbsp;&nbsp;&nbsp;
-    <a class="btn btn-primary" th:href="${lastPath}"><i class="fas fa-arrow-left"></i> 上一目录</a>&nbsp;&nbsp;&nbsp;
-    <form th:action="${uploadPath}" method="post" enctype="multipart/form-data" class="d-inline-block">
+    <a class="btn btn-primary" th:href="${rootPath}">首页</a>
+    <a class="btn btn-primary" onclick="window.history.back()"><i class="fas fa-arrow-left"></i></a>
+    <a class="btn btn-primary" onclick="window.history.go(1)"><i class="fas fa-arrow-right"></i></a>
+    <form th:if="${#strings.isEmpty(search)}" th:action="${uploadPath}" method="post" enctype="multipart/form-data"
+          class="d-inline-block">
         <div class="input-group">
             <input type="file" name="file" class="form-control"/>
             <button type="submit" class="btn btn-success">上传文件</button>
         </div>
     </form>
-    <b th:text="${dataSize + ' 个项目'}" class="text-muted">0 个项目</b>
     <form style="float:right" th:action="${rootPath}" method="get">
-        <input style="width:480px" name="search" onfocus="this.select()" placeholder="搜索" autofocus=""
-               th:value="${search}" class="form-control"/>
+        <div class="input-group">
+            <input style="width:20%" name="search" onfocus="this.select()"
+                   th:placeholder="搜索"
+                   autofocus=""
+                   th:value="${search}" class="form-control"/>
+        </div>
     </form>
+</div>
+<div class="container mt-3">
+    <b th:text="${dataSize + ' 个项目'}" class="text-muted">0 个项目</b>
+</div>
+<div class="container mt-3">
     <table class="table table-striped">
         <thead>
         <tr>
@@ -44,15 +64,21 @@
             <th>修改日期</th>
         </tr>
         </thead>
+        <tr th:if="${#strings.isEmpty(search)}">
+            <td><a th:href="${lastPath}">上一层</a></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+
         <tbody th:each="data : ${dataList}">
         <tr>
-            <td><a th:style="${data.style}" th:text="${data.name}" th:href="${data.path}">name</a></td>
-            <td th:text="${data.path}">path</td>
-            <td th:if="${!#strings.isEmpty(data.length)}" th:text="${data.length}">length</td>
+            <td><a th:style="${data.style}" th:text="${data.name}" th:href="${data.path}">名称</a></td>
+            <td th:text="${data.path}">路径</td>
+            <td th:if="${!#strings.isEmpty(data.length)}" th:text="${data.length}">文件大小</td>
             <td th:if="${#strings.isEmpty(data.length)}"><a th:style="${data.style}"
-                                                            th:href="${data.path + '?download'}">下载</a>
-            </td>
-            <td th:text="${data.lastModified}">lastModified</td>
+                                                            th:href="${data.path + '?download'}">下载</a></td>
+            <td th:text="${data.lastModified}">修改日期</td>
         </tr>
         </tbody>
     </table>
@@ -60,3 +86,4 @@
 
 </body>
 </html>
+
