@@ -18,6 +18,10 @@
 
 
 
+
+
+
+
     </style>
 </head>
 <body>
@@ -27,11 +31,11 @@
     <a class="btn btn-primary" onclick="window.history.back()"><i class="fas fa-arrow-left"></i></a>
     <a class="btn btn-primary" onclick="window.history.go(1)"><i class="fas fa-arrow-right"></i></a>
     <form th:if="${#strings.isEmpty(search)}" target="_blank" action="/upload" method="post"
-          enctype="multipart/form-data"
+          enctype="multipart/form-data" id="uploadForm"
           class="d-inline-block">
         <div class="input-group">
             <input type="file" name="file" class="form-control"/>
-            <button type="submit" class="btn btn-success">上传文件</button>
+            <button type="button" class="btn btn-success" onclick="uploadFile()">上传文件</button>
         </div>
     </form>
     <form style="float:right" th:action="${rootPath}" method="get">
@@ -82,6 +86,39 @@
     </table>
 </div>
 
+<script>
+    var socket;
+    function beforeUpload() {
+        socket = new WebSocket("ws://192.168.1.4:8080/websocket");
+        socket.onopen = function () {
+            socket.send("start");
+        };
+        socket.onmessage = function (event) {
+            console.log(event.data);
+        };
+    }
+    function uploadFile() {
+        beforeUpload()
+        var form = document.getElementById("uploadForm");
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/upload", true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                socket.close();
+            }
+        };
+        xhr.send(new FormData(form));
+    }
+
+
+
+
+
+
+
+</script>
+
 </body>
 </html>
+
 

@@ -10,7 +10,6 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +17,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -28,8 +34,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Controller
-@EnableAsync
-public class FileServerController extends AbstractController {
+@EnableWebSocket
+public class FileServerController extends AbstractController implements WebSocketConfigurer {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(FileServerController.class);
 
@@ -80,8 +86,10 @@ public class FileServerController extends AbstractController {
             return page;
         }
         if (request.getParameterMap().containsKey("view")) {
-            view(file);
-            return page;
+            if (file.isFile()) {
+                view(file);
+                return page;
+            }
         }
         if (request.getParameterMap().containsKey("delete")) {
             FileUtils.deleteQuietly(file);
@@ -224,4 +232,21 @@ public class FileServerController extends AbstractController {
         DecimalFormat format = new DecimalFormat("#.#");
         return format.format(size) + " " + suffixes[orderOfMagnitude];
     }
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(new TextWebSocketHandler() {
+                    @Override
+                    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+                        super.handleTextMessage(session, message);
+                    }
+
+                    @Override
+                    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+                        super.afterConnectionClosed(session, status);
+                    }
+                }, "/websocket")
+                .setAllowedOrigins("*");
+    }
 }
+
