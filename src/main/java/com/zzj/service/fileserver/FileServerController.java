@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -41,15 +40,22 @@ public class FileServerController extends AbstractController implements WebSocke
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm");
 
+    private static WebSocketSession session;
+
     @PostMapping("/upload")
     @ResponseBody
-    public String handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) throws Exception {
+    public void handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) throws Exception {
         File outputFile = Paths.get(getUploadFileRoot(), StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toFile();
         copyFile(file.getInputStream(), outputFile);
-        return "";
     }
 
-    private void copyFile(InputStream in, File outputFile) throws IOException, InterruptedException {
+    private void sendSocket(String msg) throws IOException {
+        if (session != null) {
+            session.sendMessage(new TextMessage(msg));
+        }
+    }
+
+    private void copyFile(InputStream in, File outputFile) throws Exception {
         try (FileOutputStream out = new FileOutputStream(outputFile)) {
             long fileSize = in.available();
             int bufferSize = 4096;
@@ -67,6 +73,7 @@ public class FileServerController extends AbstractController implements WebSocke
                     oldProgress = progress;
                     response.getOutputStream().println("Progress: " + progress + "%");
                     response.getOutputStream().flush();
+                    sendSocket("Progress: " + progress + "% " + " (Size:" + bytesCopied + "/" + fileSize + ")");
                 }
             }
         }
@@ -238,12 +245,8 @@ public class FileServerController extends AbstractController implements WebSocke
         registry.addHandler(new TextWebSocketHandler() {
                     @Override
                     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+                        FileServerController.session = session;
                         super.handleTextMessage(session, message);
-                    }
-
-                    @Override
-                    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-                        super.afterConnectionClosed(session, status);
                     }
                 }, "/websocket")
                 .setAllowedOrigins("*");
