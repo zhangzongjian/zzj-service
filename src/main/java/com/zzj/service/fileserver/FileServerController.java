@@ -45,7 +45,10 @@ public class FileServerController extends AbstractController implements WebSocke
     @PostMapping("/upload")
     @ResponseBody
     public void handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) throws Exception {
-        File outputFile = Paths.get(getUploadFileRoot(), StringUtils.defaultIfEmpty(name, file.getOriginalFilename())).toFile();
+        String fileName = StringUtils.defaultIfEmpty(name, file.getOriginalFilename());
+        String refererUrl = StringUtils.defaultIfEmpty(request.getHeader("Referer"), "");
+        String[] pathItem = (refererUrl + "/" + fileName).replaceAll(".*/fileserver/", "").split("/");
+        File outputFile = Paths.get(getUploadFileRoot(), pathItem).toFile();
         copyFile(file.getInputStream(), outputFile);
     }
 
