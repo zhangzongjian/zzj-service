@@ -13,18 +13,6 @@
             background-color: #f8f9fa;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
     </style>
 </head>
 <body>
@@ -100,13 +88,13 @@
     };
     socket.onmessage = function (event) {
         var data = event.data;
+        message.show();
         message.html(data);
     };
 
     function uploadFile() {
-        message.html("")
-        message.show();
         var form = document.getElementById("uploadForm");
+        form.querySelector("button[type='button']").disabled = true;
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/upload", true);
         xhr.onreadystatechange = function () {
@@ -116,27 +104,6 @@
         };
         xhr.send(new FormData(form));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 </script>
 
