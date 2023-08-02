@@ -15,6 +15,7 @@
 
 
 
+
     </style>
 </head>
 <body>
@@ -101,11 +102,12 @@
         xhr.open("POST", "/upload", true);
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
-                location.reload();
+               // location.reload();
             }
         };
         xhr.send(new FormData(form));
     }
+
 
 
 

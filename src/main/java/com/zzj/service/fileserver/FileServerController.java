@@ -59,6 +59,7 @@ public class FileServerController extends AbstractController implements WebSocke
     }
 
     private void copyFile(InputStream in, File outputFile) throws Exception {
+        response.setCharacterEncoding("UTF-8");
         try (FileOutputStream out = new FileOutputStream(outputFile)) {
             long fileSize = in.available();
             int bufferSize = 4096;
@@ -66,16 +67,16 @@ public class FileServerController extends AbstractController implements WebSocke
             long bytesCopied = 0;
             int bytesInBuffer;
             int oldProgress = 0;
-            response.getOutputStream().println("Progress: " + outputFile.getName() + " Size: " + getHumanReadableFileSize(fileSize));
-            response.getOutputStream().flush();
+            response.getWriter().println("Progress: " + outputFile.getName() + " Size: " + getHumanReadableFileSize(fileSize));
+            response.getWriter().flush();
             while ((bytesInBuffer = in.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesInBuffer);
                 bytesCopied += bytesInBuffer;
                 int progress = (int) ((double) bytesCopied / fileSize * 100);
                 if (progress != oldProgress && progress % 5 == 0) {
                     oldProgress = progress;
-                    response.getOutputStream().println("Progress: " + progress + "%");
-                    response.getOutputStream().flush();
+                    response.getWriter().println("Progress: " + progress + "%");
+                    response.getWriter().flush();
                     sendSocket("Progress: " + progress + "% " + " (Size:" + bytesCopied + "/" + fileSize + ")");
                 }
             }
@@ -192,7 +193,7 @@ public class FileServerController extends AbstractController implements WebSocke
             } else if (!file1.isDirectory() && file2.isDirectory()) {
                 return 1;
             } else {
-                return file1.getName().compareToIgnoreCase(file2.getName());
+                return file1.lastModified() < file2.lastModified() ? 1 : -1;
             }
         });
         for (File file : files) {
