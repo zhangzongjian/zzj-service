@@ -14,15 +14,6 @@
         }
 
 
-
-
-
-
-
-
-
-
-
     </style>
 </head>
 <body>
@@ -35,9 +26,8 @@
           enctype="multipart/form-data" id="uploadForm"
           class="d-inline-block">
         <div class="input-group">
-            <input id="file-input" type="file" name="file" class="form-control"/>
-            <button type="button" class="btn btn-success" onclick="uploadFile_()">上传文件</button>
-            <button type="button" class="btn btn-success" onclick="uploadFile()">上传文件websocket</button>
+            <input type="file" name="file" class="form-control"/>
+            <button type="button" class="btn btn-success" onclick="uploadFile()">上传文件</button>
         </div>
     </form>
     <div id="message" class="container mt-3 alert alert-info text-center" role="alert" style="display: none">消息</div>
@@ -102,9 +92,9 @@
         location.reload();
     };
 
-    function uploadFile_() {
+    function uploadFile() {
         var form = document.getElementById("uploadForm");
-        //form.querySelector("button[type='button']").disabled = true;
+        form.querySelector("button[type='button']").disabled = true;
         socket.send("start")
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/upload", true);
@@ -115,33 +105,6 @@
         };
         xhr.send(new FormData(form));
     }
-
-    function uploadFile() {
-        var file = document.getElementById('file-input').files[0];
-        if (file == undefined) {
-            return;
-        }
-        var fileName = file.name;
-        socket.send("url=" + window.location + "/" + fileName);
-        var reader = new FileReader();
-        reader.onload = function(event) {
-            var fileContent = event.target.result;
-            var chunkSize = 2048;
-            var offset = 0;
-            socket.send("size=" + fileContent.byteLength);
-            while (offset < fileContent.byteLength) {
-                var chunk = fileContent.slice(offset, offset + chunkSize);
-                socket.send(chunk);
-                offset += chunkSize;
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    }
-
-
-
-
-
 
 
 
