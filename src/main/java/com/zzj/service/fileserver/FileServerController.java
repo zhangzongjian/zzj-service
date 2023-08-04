@@ -4,6 +4,7 @@ import com.zzj.service.controller.AbstractController;
 import com.zzj.util.ConfigUtil;
 import com.zzj.util.StringUtil;
 import com.zzj.util.ZipUtil;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AbstractFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
@@ -17,12 +18,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.socket.BinaryMessage;
+import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
-import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +34,9 @@ import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 @Controller
 @EnableWebSocket
@@ -46,6 +52,9 @@ public class FileServerController extends AbstractController implements WebSocke
     @ResponseBody
     public void handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) throws Exception {
         String fileName = StringUtils.defaultIfEmpty(name, file.getOriginalFilename());
+        if (StringUtils.isEmpty(fileName)) {
+            return;
+        }
         String refererUrl = StringUtils.defaultIfEmpty(request.getHeader("Referer"), "");
         String[] pathItem = (refererUrl + "/" + fileName).replaceAll(".*/fileserver/", "").split("/");
         File outputFile = Paths.get(getUploadFileRoot(), pathItem).toFile();
@@ -246,14 +255,59 @@ public class FileServerController extends AbstractController implements WebSocke
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(new TextWebSocketHandler() {
-                    @Override
-                    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-                        FileServerController.session = session;
-                        super.handleTextMessage(session, message);
-                    }
-                }, "/websocket")
+        registry.addHandler(new FileWebSocketHandler(), "/websocket")
                 .setAllowedOrigins("*");
     }
+
+    class FileWebSocketHandler extends BinaryWebSocketHandler {
+        private final Map<String, OutputStream> outputStreamMap = new ConcurrentHashMap<>();
+        private final Map<String, Long> sizeMap = new ConcurrentHashMap<>();
+        private final Map<String, AtomicLong> currentSizeMap = new ConcurrentHashMap<>();
+
+        @Override
+        protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws IOException {
+            String sessionId = session.getId();
+            byte[] bytes = message.getPayload().array();
+            outputStreamMap.get(sessionId).write(bytes);
+            int progress = (int) ((double) currentSizeMap.computeIfAbsent(sessionId, key -> new AtomicLong(0)).addAndGet(bytes.length) / sizeMap.get(sessionId) * 100);
+            sendSocket("Progress: " + progress + "% " + " (Size:" + currentSizeMap.get(sessionId) + "/" + sizeMap.get(sessionId) + ")");
+            if (currentSizeMap.get(sessionId).get() == sizeMap.get(sessionId)) {
+                session.close();
+            }
+        }
+
+        @SneakyThrows
+        @Override
+        protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+            FileServerController.session = session;
+            String params = new String(message.asBytes(), StandardCharsets.UTF_8);
+            String type = params.split("=")[0];
+            String content = params.substring(params.indexOf("=") + 1);
+            Map<String, Consumer<String>> map = new HashMap<>();
+            map.put("url", msg -> {
+                String[] pathItem = (content).replaceAll(".*/fileserver/", "").split("/");
+                File outputFile = Paths.get(getUploadFileRoot(), pathItem).toFile();
+                try {
+                    outputStreamMap.put(session.getId(), new FileOutputStream(outputFile));
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            map.put("size", msg -> sizeMap.put(session.getId(), Long.parseLong(msg)));
+            map.getOrDefault(type, msg -> {
+            }).accept(content);
+        }
+
+        @Override
+        public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws IOException {
+            OutputStream out = outputStreamMap.get(session.getId());
+            if (out == null) {
+                return;
+            }
+            out.close();
+
+        }
+    }
+
 }
 
