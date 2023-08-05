@@ -11,12 +11,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -25,7 +25,6 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
@@ -86,7 +85,7 @@ public class FileServerController extends AbstractController implements WebSocke
     }
 
     @GetMapping("/fileserver/**")
-    public String handleFileServer(Model model, @RequestParam(value = "search", required = false) String search) throws Exception {
+    public ModelAndView handleFileServer(@RequestParam(value = "search", required = false) String search) throws Exception {
         String rootPath = "/fileserver";
         String servletPath = request.getServletPath();
         String lastPath = servletPath.substring(0, servletPath.lastIndexOf('/'));
@@ -94,33 +93,36 @@ public class FileServerController extends AbstractController implements WebSocke
         String relativePath = servletPath.replaceAll(rootPath, "");
         File file = Paths.get(getServerFileRoot(), relativePath).toFile();
         String page = "fileserver/index";
+        ModelAndView modelAndView = new ModelAndView();
+        modelAndView.setViewName(page);
         if (request.getParameterMap().containsKey("download")) {
             download(file);
-            return "redirect:null";
+            return null;
         }
         if (request.getParameterMap().containsKey("view")) {
             if (file.isFile()) {
                 toResponse(file);
-                return "redirect:null";
+                return null;
             }
         }
         if (request.getParameterMap().containsKey("delete")) {
             FileUtils.deleteQuietly(file);
-            return "redirect:" + lastPath;
+            modelAndView.setViewName("redirect:" + lastPath);
+            return modelAndView;
         }
         if (file.isDirectory()) {
             List<File> files = listFiles(file, search);
             List<FileProp> dataList = getDataList(rootPath, files);
-            model.addAttribute("search", search);
-            model.addAttribute("rootPath", rootPath);
-            model.addAttribute("lastPath", lastPath);
-            model.addAttribute("dataList", dataList);
-            model.addAttribute("dataSize", dataList.size());
+            modelAndView.addObject("search", search);
+            modelAndView.addObject("rootPath", rootPath);
+            modelAndView.addObject("lastPath", lastPath);
+            modelAndView.addObject("dataList", dataList);
+            modelAndView.addObject("dataSize", dataList.size());
         } else {
             download(file);
-            return page;
+            return null;
         }
-        return page;
+        return modelAndView;
     }
 
     private String getServerFileRoot() {
@@ -164,7 +166,6 @@ public class FileServerController extends AbstractController implements WebSocke
         }
         response.setContentType("application/octet-stream");
         response.setContentLength((int) file.length());
-        response.setHeader("Content-Disposition", "attachment; filename=" + new String(file.getName().getBytes(), StandardCharsets.ISO_8859_1));
         try {
             toResponse(file);
         } finally {
@@ -195,6 +196,9 @@ public class FileServerController extends AbstractController implements WebSocke
             } else if (!file1.isDirectory() && file2.isDirectory()) {
                 return 1;
             } else {
+                if (file1.lastModified() == file2.lastModified()) {
+                    return 0;
+                }
                 return file1.lastModified() < file2.lastModified() ? 1 : -1;
             }
         });
