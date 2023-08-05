@@ -62,7 +62,6 @@ public class FileServerController extends AbstractController implements WebSocke
     }
 
     private void copyFile(InputStream in, File outputFile) throws Exception {
-        response.setCharacterEncoding("UTF-8");
         try (FileOutputStream out = new FileOutputStream(outputFile)) {
             long fileSize = in.available();
             int bufferSize = 4096;
@@ -97,18 +96,17 @@ public class FileServerController extends AbstractController implements WebSocke
         String page = "fileserver/index";
         if (request.getParameterMap().containsKey("download")) {
             download(file);
-            return page;
+            return "redirect:null";
         }
         if (request.getParameterMap().containsKey("view")) {
             if (file.isFile()) {
-                view(file);
-                return page;
+                toResponse(file);
+                return "redirect:null";
             }
         }
         if (request.getParameterMap().containsKey("delete")) {
             FileUtils.deleteQuietly(file);
-            response.sendRedirect(lastPath);
-            return page;
+            return "redirect:" + lastPath;
         }
         if (file.isDirectory()) {
             List<File> files = listFiles(file, search);
@@ -165,15 +163,16 @@ public class FileServerController extends AbstractController implements WebSocke
             file = tmpFile;
         }
         response.setContentType("application/octet-stream");
+        response.setContentLength((int) file.length());
         response.setHeader("Content-Disposition", "attachment; filename=" + new String(file.getName().getBytes(), StandardCharsets.ISO_8859_1));
         try {
-            view(file);
+            toResponse(file);
         } finally {
             FileUtils.deleteQuietly(tmpFile);
         }
     }
 
-    private void view(File file) throws Exception {
+    private void toResponse(File file) throws Exception {
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             OutputStream outputStream = response.getOutputStream();
             byte[] buffer = new byte[4096];
