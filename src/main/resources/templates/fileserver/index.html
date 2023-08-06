@@ -15,23 +15,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     </style>
 </head>
 <body>
@@ -44,11 +27,10 @@
           enctype="multipart/form-data" id="uploadForm"
           class="d-inline-block">
         <div class="input-group">
-            <input type="text" name="name" value=""/>
-            <input type="text" name="length" value=""/>
-            <input type="file" name="file" class="form-control"/>
-            <button type="button" class="btn btn-success" onclick="uploadFile_()">上传文件servlet</button>
-            <button type="button" class="btn btn-success" onclick="uploadFile()">上传文件</button>
+            <input type="hidden" name="length" value=""/>
+            <input id="fileInput" type="file" name="file" class="form-control"/>
+            <button type="button" class="btn btn-success" onclick="uploadServlet()">上传文件</button>
+            <!--<button type="button" class="btn btn-success" onclick="uploadFile()" >上传文件</button>-->
         </div>
     </form>
     <div id="message" class="container mt-3 alert alert-info text-center" role="alert" style="display: none">消息</div>
@@ -113,24 +95,28 @@
         location.reload();
     };
 
-    function uploadFile_() {
+    $("#fileInput").on("change", function() {
         var form = document.getElementById("uploadForm");
-        //form.querySelector("button[type='button']").disabled = true;
-        socket.send("start")
         var reader = new FileReader();
         reader.onload = function(event) {
             var fileContent = event.target.result;
             form["length"].value = fileContent.byteLength
-            var xhr = new XMLHttpRequest();
-            xhr.open("PUT", "/upload_", true);
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                   location.reload();
-                }
-            };
-            xhr.send(new FormData(form));
         };
         reader.readAsArrayBuffer(form["file"].files[0]);
+    });
+
+    function uploadServlet() {
+        var form = document.getElementById("uploadForm");
+        form.querySelector("button[type='button']").disabled = true;
+        socket.send("start")
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/uploadServlet", true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+               location.reload();
+            }
+        };
+        xhr.send(new FormData(form));
     }
 
     function uploadFile() {
@@ -146,32 +132,6 @@
         };
         xhr.send(new FormData(form));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

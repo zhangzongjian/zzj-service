@@ -1,11 +1,12 @@
 package com.zzj.service.fileserver;
 
 import com.zzj.util.BeanUtil;
+import lombok.SneakyThrows;
+import org.apache.commons.fileupload.FileItemIterator;
+import org.apache.commons.fileupload.FileItemStream;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.tomcat.util.http.fileupload.FileItemIterator;
-import org.apache.tomcat.util.http.fileupload.FileItemStream;
-import org.apache.tomcat.util.http.fileupload.servlet.ServletFileUpload;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -16,11 +17,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-@WebServlet(urlPatterns = "/upload_")
+@WebServlet(urlPatterns = "/uploadServlet")
 public class UploadServlet extends HttpServlet {
 
+    @SneakyThrows
     @Override
-    protected void doPut(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    protected void doPut(HttpServletRequest request, HttpServletResponse response) {
         FileServerController fileServer = BeanUtil.getBean(FileServerController.class);
         ServletFileUpload upload = new ServletFileUpload();
         FileItemIterator iterator = upload.getItemIterator(request);

@@ -74,11 +74,11 @@ public class FileServerController extends AbstractController implements WebSocke
                 out.write(buffer, 0, bytesInBuffer);
                 bytesCopied += bytesInBuffer;
                 int progress = (int) ((double) bytesCopied / fileSize * 100);
-                if (progress != oldProgress && progress % 5 == 0) {
+                if (progress != oldProgress && progress % 5 == 0 || fileSize == 0) {
                     oldProgress = progress;
                     response.getWriter().println("Progress: " + progress + "%");
                     response.getWriter().flush();
-                    sendSocket("Progress: " + progress + "% " + " (Size:" + bytesCopied + "/" + fileSize + ")");
+                    sendSocket("Progress: " + progress + "% " + " (Size:" + getHumanReadableFileSize(bytesCopied) + "/" + getHumanReadableFileSize(fileSize) + ")");
                 }
             }
         }
