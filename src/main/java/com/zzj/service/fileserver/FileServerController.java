@@ -43,7 +43,7 @@ public class FileServerController extends AbstractController implements WebSocke
 
     @PostMapping("/upload")
     @ResponseBody
-    public void handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) throws Exception {
+    public void handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam(value = "name", required = false) String name) throws IOException {
         String fileName = StringUtils.defaultIfEmpty(name, file.getOriginalFilename());
         if (StringUtils.isEmpty(fileName)) {
             return;
@@ -51,7 +51,7 @@ public class FileServerController extends AbstractController implements WebSocke
         String refererUrl = StringUtils.defaultIfEmpty(request.getHeader("Referer"), "");
         String[] pathItem = (refererUrl + "/" + fileName).replaceAll(".*/fileserver/", "").split("/");
         File outputFile = Paths.get(getUploadFileRoot(), pathItem).toFile();
-        copyFile(file.getInputStream(), outputFile);
+        copyFile(file, outputFile);
     }
 
     private void sendSocket(String msg) throws IOException {
@@ -60,9 +60,9 @@ public class FileServerController extends AbstractController implements WebSocke
         }
     }
 
-    private void copyFile(InputStream in, File outputFile) throws Exception {
-        try (FileOutputStream out = new FileOutputStream(outputFile)) {
-            long fileSize = in.available();
+    private void copyFile(MultipartFile file, File outputFile) throws IOException {
+        try (InputStream in = file.getInputStream(); FileOutputStream out = new FileOutputStream(outputFile)) {
+            long fileSize = file.getSize();
             int bufferSize = 4096;
             byte[] buffer = new byte[bufferSize];
             long bytesCopied = 0;
