@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
 @EnableWebSocket
@@ -39,7 +40,7 @@ public class FileServerController extends AbstractController implements WebSocke
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm");
 
-    private static WebSocketSession session;
+    private static final Map<String, WebSocketSession> SESSION_MAP = new ConcurrentHashMap<>();
 
     @PostMapping("/upload")
     @ResponseBody
@@ -55,6 +56,7 @@ public class FileServerController extends AbstractController implements WebSocke
     }
 
     private void sendSocket(String msg) throws IOException {
+        WebSocketSession session = SESSION_MAP.get(request.getHeader("socketId"));
         if (session != null) {
             session.sendMessage(new TextMessage(msg));
         }
@@ -255,7 +257,7 @@ public class FileServerController extends AbstractController implements WebSocke
         registry.addHandler(new TextWebSocketHandler() {
                     @Override
                     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-                        FileServerController.session = session;
+                        SESSION_MAP.put(new String(message.asBytes()), session);
                         super.handleTextMessage(session, message);
                     }
                 }, "/websocket")
