@@ -30,7 +30,6 @@ import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
 @EnableWebSocket
@@ -40,7 +39,7 @@ public class FileServerController extends AbstractController implements WebSocke
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm");
 
-    private static final Map<String, WebSocketSession> SESSION_MAP = new ConcurrentHashMap<>();
+    private static final Map<String, WebSocketSession> SESSION_MAP = new HashMap<>();
 
     @PostMapping("/upload")
     @ResponseBody
@@ -76,7 +75,7 @@ public class FileServerController extends AbstractController implements WebSocke
                 out.write(buffer, 0, bytesInBuffer);
                 bytesCopied += bytesInBuffer;
                 int progress = (int) ((double) bytesCopied / fileSize * 100);
-                if (progress != oldProgress && progress % 5 == 0 || fileSize == 0) {
+                if (progress != oldProgress) {
                     oldProgress = progress;
                     response.getWriter().println("Progress: " + progress + "%");
                     response.getWriter().flush();
@@ -242,7 +241,7 @@ public class FileServerController extends AbstractController implements WebSocke
     }
 
     private String getHumanReadableFileSize(long size) {
-        String[] suffixes = new String[]{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
+        String[] suffixes = new String[]{"B", "KB", "MB"};
         int orderOfMagnitude = 0;
         while (size >= 1024 && orderOfMagnitude < suffixes.length - 1) {
             size /= 1024;
