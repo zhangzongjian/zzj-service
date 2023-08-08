@@ -1,6 +1,7 @@
 package com.zzj.util;
 
 import com.zzj.util.filewatcher.Watcher;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -79,5 +80,9 @@ public class ConfigUtil {
             throw new NullPointerException(StringUtil.format("Property[{}] is not exits in {}", key, CONFIG_FILE));
         }
         return value;
+    }
+
+    public static int getPropertyInt(String key) {
+        return NumberUtils.toInt(getProperty(key));
     }
 }

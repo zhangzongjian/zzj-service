@@ -13,9 +13,6 @@
             background-color: #f8f9fa;
         }
 
-
-
-
     </style>
 </head>
 <body>
@@ -84,9 +81,9 @@
     </table>
 </div>
 
-<script>
+<script th:inline="javascript">
     var message = $("#message");
-    var socket = new WebSocket("ws://192.168.1.4:8080/websocket");
+    var socket = new WebSocket("ws://" + [[${localIp}]] + ":8080/websocket");
     var socketId = Date.now();
     socket.onmessage = function (event) {
         var data = event.data;
@@ -127,10 +124,6 @@
         };
         xhr.send(new FormData(form));
     }
-
-
-
-
 
 </script>
 

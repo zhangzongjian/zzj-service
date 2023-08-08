@@ -3,11 +3,19 @@ package com.zzj.service.fileserver;
 import com.zzj.service.controller.AbstractController;
 import com.zzj.util.ConfigUtil;
 import com.zzj.util.StringUtil;
+import com.zzj.util.SystemUtil;
 import com.zzj.util.ZipUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AbstractFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.ftpserver.FtpServerFactory;
+import org.apache.ftpserver.ftplet.Authority;
+import org.apache.ftpserver.ftplet.UserManager;
+import org.apache.ftpserver.listener.ListenerFactory;
+import org.apache.ftpserver.usermanager.PropertiesUserManagerFactory;
+import org.apache.ftpserver.usermanager.impl.BaseUser;
+import org.apache.ftpserver.usermanager.impl.WritePermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -40,6 +48,32 @@ public class FileServerController extends AbstractController implements WebSocke
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm");
 
     private static final Map<String, WebSocketSession> SESSION_MAP = new HashMap<>();
+
+    public FileServerController() {
+        ftpServer();
+    }
+
+    private void ftpServer() {
+        UserManager userManager = new PropertiesUserManagerFactory().createUserManager();
+        ListenerFactory listener = new ListenerFactory();
+        FtpServerFactory factory = new FtpServerFactory();
+        BaseUser user = new BaseUser();
+        user.setName("anonymous");
+        user.setPassword("");
+        user.setHomeDirectory(getUploadFileRoot());
+        List<Authority> authorities = new ArrayList<>();
+        authorities.add(new WritePermission());
+        user.setAuthorities(authorities);
+        listener.setPort(ConfigUtil.getPropertyInt("fileserver.ftp.port"));
+        factory.setUserManager(userManager);
+        factory.addListener("default", listener.createListener());
+        try {
+            userManager.save(user);
+            factory.createServer().start();
+        } catch (Exception e) {
+            LOGGER.error("Start ftp server failed.", e);
+        }
+    }
 
     @PostMapping("/upload")
     @ResponseBody
@@ -119,6 +153,7 @@ public class FileServerController extends AbstractController implements WebSocke
             modelAndView.addObject("lastPath", lastPath);
             modelAndView.addObject("dataList", dataList);
             modelAndView.addObject("dataSize", dataList.size());
+            modelAndView.addObject("localIp", SystemUtil.getLocalIpAddress());
         } else {
             download(file);
             return null;
