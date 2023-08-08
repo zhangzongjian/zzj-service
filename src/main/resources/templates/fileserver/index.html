@@ -16,13 +16,6 @@
 
 
 
-
-
-
-
-
-
-
     </style>
 </head>
 <body>
@@ -38,7 +31,7 @@
             <input type="hidden" name="length" value=""/>
             <input id="fileInput" type="file" name="file" class="form-control"/>
             <button type="button" class="btn btn-success" onclick="uploadServlet()">上传文件</button>
-            <!--<button type="button" class="btn btn-success" onclick="uploadFile()" >上传文件</button>-->
+            <!--<button type="button" class="btn btn-success" onclick="uploadFile()">上传文件</button>-->
         </div>
     </form>
     <div id="message" class="container mt-3 alert alert-info text-center" role="alert" style="display: none">消息</div>
@@ -123,9 +116,10 @@
     function uploadFile() {
         var form = document.getElementById("uploadForm");
         form.querySelector("button[type='button']").disabled = true;
-        socket.send("start")
+        socket.send(socketId)
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/upload", true);
+        xhr.setRequestHeader("socketId", socketId);
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status === 200) {
                location.reload();
@@ -133,6 +127,10 @@
         };
         xhr.send(new FormData(form));
     }
+
+
+
+
 
 </script>
 
