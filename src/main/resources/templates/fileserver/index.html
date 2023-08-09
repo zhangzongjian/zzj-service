@@ -13,6 +13,41 @@
             background-color: #f8f9fa;
         }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     </style>
 </head>
 <body>
@@ -31,6 +66,9 @@
             <!--<button type="button" class="btn btn-success" onclick="uploadFile()">上传文件</button>-->
         </div>
     </form>
+    <button type="button" class="btn btn-primary" onclick="toggleConsole()">控制台</button>
+
+
     <div id="message" class="container mt-3 alert alert-info text-center" role="alert" style="display: none">消息</div>
 
     <form style="float:right" th:action="${rootPath}" method="get">
@@ -41,6 +79,11 @@
                    th:value="${search}" class="form-control"/>
         </div>
     </form>
+    <div id="console" class="container mt-3" style="display: none">
+        <textarea id="console-input" class="form-control" rows="10"></textarea>
+    </div>
+
+
 </div>
 <div class="container mt-3">
     <b th:text="${dataSize + ' 个项目'}" class="text-muted">0 个项目</b>
@@ -82,22 +125,30 @@
 </div>
 
 <script th:inline="javascript">
-    var message = $("#message");
-    var socket = new WebSocket("ws://" + [[${localIp}]] + ":8080/websocket");
-    var socketId = Date.now();
-    socket.onmessage = function (event) {
-        var data = event.data;
-        message.show();
-        message.html(data);
-    };
-    socket.onclose = function () {
-        location.reload();
-    };
+    var socket = getSocket("uploadFile");
+    function getSocket(namespace) {
+        return new WebSocket("ws://" + [[${localIp}]] + ":8080/" + namespace);
+    }
+
+    function onUploadMessage() {
+        var message = $("#message");
+        var socketId = Date.now();
+        socket.onmessage = function (event) {
+            var data = event.data;
+            message.show();
+            message.html(data);
+        };
+        socket.onclose = function () {
+            location.reload();
+        };
+        return socketId;
+    }
 
     function uploadServlet() {
         var form = document.getElementById("uploadForm");
         form["length"].value = form["file"].files[0].size
         form.querySelector("button[type='button']").disabled = true;
+        var socketId = onUploadMessage();
         socket.send(socketId);
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/uploadServlet", true);
@@ -113,6 +164,7 @@
     function uploadFile() {
         var form = document.getElementById("uploadForm");
         form.querySelector("button[type='button']").disabled = true;
+        var socketId = onUploadMessage();
         socket.send(socketId)
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/upload", true);
@@ -124,6 +176,44 @@
         };
         xhr.send(new FormData(form));
     }
+
+    function toggleConsole() {
+        if ($("#console").is(":visible")) {
+            $("#console").hide();
+        } else {
+            $("#console").show();
+        }
+    }
+
+    var t=document.getElementById("console-input");
+    t.onkeydown=function(){
+        if(event.keyCode === 13) {
+            var v=this.value;
+            var cv="";
+            if("selectionStart" in t){
+                cv=v.substr(0,t.selectionStart);
+            }else{
+                var oSel=document.selection.createRange();
+                oSel.moveStart('character',-t.value.length);
+                cv=oSel.text;
+            }
+            var n=cv.split('\n').length-1;
+            var text=$("#console-input").val();
+            var array=text.split("\n");
+            console.log('content:'+array[n])
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 </script>
 

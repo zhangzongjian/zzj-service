@@ -294,7 +294,7 @@ public class FileServerController extends AbstractController implements WebSocke
                         SESSION_MAP.put(new String(message.asBytes()), session);
                         super.handleTextMessage(session, message);
                     }
-                }, "/websocket")
+                }, "/uploadFile")
                 .setAllowedOrigins("*");
     }
 }
