@@ -85,6 +85,7 @@ public class FileServerController extends AbstractController implements WebSocke
         String refererUrl = StringUtils.defaultIfEmpty(request.getHeader("Referer"), "");
         String[] pathItem = (refererUrl + "/" + fileName).replaceAll(".*/fileserver/", "").split("/");
         File outputFile = Paths.get(getUploadFileRoot(), pathItem).toFile();
+        outputFile.getParentFile().mkdirs();
         copyFile(file, outputFile);
     }
 
