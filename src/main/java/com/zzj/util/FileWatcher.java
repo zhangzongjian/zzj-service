@@ -15,26 +15,26 @@ public class FileWatcher {
 
     private static final Map<File, List<Watcher>> WATCHER_MAP = new HashMap<>();
 
-    private static final WatchService watchService;
+    private static final WatchService watchService = newWatchService();
 
     static {
-        watchService = newWatchService();
-        new Thread() {
+        new Thread("File_watch_thread") {
             @Override
             public void run() {
                 while (true) {
+                    File file = null;
                     try {
                         WatchKey key = watchService.take();
                         for (WatchEvent<?> event : key.pollEvents()) {
                             Path eventPath = (Path) event.context();
                             Path eventDir = (Path) key.watchable();
-                            File file = Paths.get(eventDir.toString(), eventPath.toString()).toFile();
+                            file = Paths.get(eventDir.toString(), eventPath.toString()).toFile();
                             handleFile(file);
                             LOGGER.info("Event kind:{}. File affected: {}.", event.kind(), file);
                         }
                         key.reset();
                     } catch (Exception e) {
-                        throw new RuntimeException("File watcher error.", e);
+                        throw new RuntimeException("File watcher error. " + Optional.ofNullable(file).map(File::getPath).orElse(null), e);
                     }
                 }
 

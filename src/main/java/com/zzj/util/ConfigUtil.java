@@ -9,11 +9,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 
 public class ConfigUtil {
@@ -21,54 +17,52 @@ public class ConfigUtil {
 
     private static final Properties PROPERTIES = new Properties();
 
-    private static final Path CONFIG_FILE = Paths.get("config", "application.properties");
+    private static final String CONFIG_NAME = "application.properties";
+
+    private static boolean hasRegisterWatcher = false;
 
     static {
         try {
             init();
-            registerWatcher();
         } catch (Exception e) {
             throw new RuntimeException("Init config util error.", e);
         }
     }
 
-    private static void registerWatcher() throws IOException {
-        File configFile = getConfigFile();
-        if (configFile == null) {
+    private static void registerWatcher(File config) throws IOException {
+        if (hasRegisterWatcher) {
             return;
         }
-        FileWatcher.register(new Watcher(getConfigFile().getPath()) {
+        FileWatcher.register(new Watcher(config.getPath()) {
             @Override
             public void handle() {
                 init();
             }
         });
+        hasRegisterWatcher = true;
     }
 
-    private static File getConfigFile() {
-        File parent = new File(System.getProperty("java.class.path").split(";")[0]).getParentFile();
-        File config = Paths.get(parent.getAbsolutePath(), CONFIG_FILE.toString()).toFile();
-        return config.exists() ? config : null;
+    private static void load(InputStream inputStream) throws IOException {
+        Properties properties = new Properties();
+        properties.load(inputStream);
+        PROPERTIES.putAll(properties);
     }
 
     /**
-     * 优先加载包外面的config/application.properties
+     * 配置优先级：resources目录>war包外>war包内
      */
     private static void init() {
         try {
-            File config = getConfigFile();
-            InputStream in;
-            if (config != null) {
-                LOGGER.info("Init config from {}", config);
-                in = Files.newInputStream(config.toPath());
-            } else {
-                String fileName = CONFIG_FILE.getFileName().toString();
-                ClassPathResource resource = new ClassPathResource(fileName);
-                LOGGER.info("Init config from classpath: {}", resource.getURL());
-                in = resource.getInputStream();
+            // idea resources目录
+            // java -jar xxx.war 时加载war包内配置
+            load(new ClassPathResource(CONFIG_NAME).getInputStream());
+            // java -jar xxx.war 时加载war包外配置
+            File parent = new File(System.getProperty("java.class.path")).getParentFile();
+            File config = new File(parent.getAbsolutePath(), CONFIG_NAME);
+            if (config.exists()) {
+                load(Files.newInputStream(config.toPath()));
+                registerWatcher(config);
             }
-            InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
-            PROPERTIES.load(reader);
         } catch (Exception e) {
             LOGGER.error("Init config util error.", e);
         }
@@ -77,7 +71,7 @@ public class ConfigUtil {
     public static String getProperty(String key) {
         String value = PROPERTIES.getProperty(key);
         if (value == null) {
-            throw new NullPointerException(StringUtil.format("Property[{}] is not exits in {}", key, CONFIG_FILE));
+            throw new NullPointerException(StringUtil.format("Property[{}] is not exits in {}", key, CONFIG_NAME));
         }
         return value;
     }
