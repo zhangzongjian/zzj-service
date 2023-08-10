@@ -17,37 +17,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     </style>
 </head>
 <body>
@@ -79,7 +48,7 @@
                    th:value="${search}" class="form-control"/>
         </div>
     </form>
-    <div id="console" class="container mt-3" style="display: none">
+    <div id="console" class="container mt-3">
         <textarea id="console-input" class="form-control" rows="10"></textarea>
     </div>
 
@@ -125,7 +94,9 @@
 </div>
 
 <script th:inline="javascript">
-    var socket = getSocket("uploadFile");
+    var uploadSocket = getSocket("uploadFile");
+    var consoleSocket = getSocket("console");
+
     function getSocket(namespace) {
         return new WebSocket("ws://" + [[${localIp}]] + ":8080/" + namespace);
     }
@@ -133,15 +104,21 @@
     function onUploadMessage() {
         var message = $("#message");
         var socketId = Date.now();
-        socket.onmessage = function (event) {
+        uploadSocket.onmessage = function (event) {
             var data = event.data;
             message.show();
             message.html(data);
         };
-        socket.onclose = function () {
-            location.reload();
-        };
         return socketId;
+    }
+
+    function onConsoleMessage() {
+        consoleSocket.onmessage = function (event) {
+            var data = event.data;
+            var value = $("#console-input").val();
+            console.log(data);
+            $("#console-input").val(value + data + "\n");
+        };
     }
 
     function uploadServlet() {
@@ -149,7 +126,7 @@
         form["length"].value = form["file"].files[0].size
         form.querySelector("button[type='button']").disabled = true;
         var socketId = onUploadMessage();
-        socket.send(socketId);
+        uploadSocket.send(socketId);
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/uploadServlet", true);
         xhr.setRequestHeader("socketId", socketId);
@@ -165,7 +142,7 @@
         var form = document.getElementById("uploadForm");
         form.querySelector("button[type='button']").disabled = true;
         var socketId = onUploadMessage();
-        socket.send(socketId)
+        uploadSocket.send(socketId)
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/upload", true);
         xhr.setRequestHeader("socketId", socketId);
@@ -187,6 +164,7 @@
 
     var t=document.getElementById("console-input");
     t.onkeydown=function(){
+        onConsoleMessage();
         if(event.keyCode === 13) {
             var v=this.value;
             var cv="";
@@ -200,16 +178,9 @@
             var n=cv.split('\n').length-1;
             var text=$("#console-input").val();
             var array=text.split("\n");
-            console.log('content:'+array[n])
+            consoleSocket.send(array[n]);
         }
     }
-
-
-
-
-
-
-
 
 
 
