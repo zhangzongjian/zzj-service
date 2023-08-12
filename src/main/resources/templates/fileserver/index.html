@@ -13,36 +13,6 @@
             background-color: #f8f9fa;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     </style>
 </head>
 <body>
@@ -61,7 +31,7 @@
             <!--<button type="button" class="btn btn-success" onclick="uploadFile()">上传文件</button>-->
         </div>
     </form>
-    <button type="button" class="btn btn-primary" onclick="toggleConsole()">控制台</button>
+    <button type="button" class="btn btn-primary" onclick="toggleConsole()" style="display: none">控制台</button>
 
 
     <div id="message" class="container mt-3 alert alert-info text-center" role="alert" style="display: none">消息</div>
@@ -74,8 +44,8 @@
                    th:value="${search}" class="form-control"/>
         </div>
     </form>
-    <div id="console" class="container mt-3">
-        <textarea id="console-input" class="form-control" rows="10"></textarea>
+    <div id="console" class="container mt-3" style="display: none">
+        <textarea id="console-input" class="form-control" rows="10" placeholder="输入命令回车试试"></textarea>
     </div>
 
 
@@ -210,21 +180,6 @@
             $("#console-input").val(array[n]);
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 </script>
 
