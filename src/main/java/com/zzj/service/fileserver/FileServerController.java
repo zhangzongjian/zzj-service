@@ -136,6 +136,10 @@ public class FileServerController extends AbstractController implements WebSocke
         String page = "fileserver/index";
         ModelAndView modelAndView = new ModelAndView();
         modelAndView.setViewName(page);
+        if (request.getParameterMap().containsKey("ftp")) {
+            modelAndView.setViewName("redirect:ftp://" + SystemUtil.getLocalIpAddress() + ":" + ConfigUtil.getPropertyInt("fileserver.ftp.port") + relativePath);
+            return modelAndView;
+        }
         if (request.getParameterMap().containsKey("download")) {
             download(file);
             return null;
