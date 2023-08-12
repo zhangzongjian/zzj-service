@@ -38,7 +38,6 @@ import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Controller
 @EnableWebSocket
@@ -295,6 +294,7 @@ public class FileServerController extends AbstractController implements WebSocke
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+
         registry.addHandler(new TextWebSocketHandler() {
                     @Override
                     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
@@ -306,18 +306,15 @@ public class FileServerController extends AbstractController implements WebSocke
         registry.addHandler(new TextWebSocketHandler() {
                     @Override
                     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-                        Process process = new ProcessBuilder("cmd", "\\c", new String(message.asBytes())).redirectErrorStream(true).start();
-//                        Process process = new ProcessBuilder("/bin/bash", "-c", new String(message.asBytes())).redirectErrorStream(true).start();
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                            String line;
-                            while ((line = reader.readLine()) != null) {
+                        String command = new String(message.asBytes());
+                        SystemUtil.exec(new String[]{"/bin/bash", "-c", command}, 5000, line -> {
+                            try {
                                 session.sendMessage(new TextMessage(line));
+                            } catch (IOException e) {
+                                LOGGER.error("Socket send message error.", e);
                             }
-                            process.waitFor(5, TimeUnit.SECONDS);
-                            session.sendMessage(new TextMessage(process.exitValue() + ""));
-                        } finally {
-                            process.destroy();
-                        }
+                        });
+                        session.sendMessage(new TextMessage("<<< " + command));
                     }
                 }, "/console")
                 .setAllowedOrigins("*");

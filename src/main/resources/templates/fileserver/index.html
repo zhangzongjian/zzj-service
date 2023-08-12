@@ -17,6 +17,32 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     </style>
 </head>
 <body>
@@ -116,8 +142,10 @@
         consoleSocket.onmessage = function (event) {
             var data = event.data;
             var value = $("#console-input").val();
-            console.log(data);
             $("#console-input").val(value + data + "\n");
+            $("#console-input")[0].style.height = "auto";
+            $("#console-input")[0].style.height = t.scrollHeight + "px";
+            window.scrollTo(0, t.scrollHeight - $(window).height() + 100);
         };
     }
 
@@ -163,7 +191,7 @@
     }
 
     var t=document.getElementById("console-input");
-    t.onkeydown=function(){
+    t.onkeydown = function(){
         onConsoleMessage();
         if(event.keyCode === 13) {
             var v=this.value;
@@ -179,8 +207,20 @@
             var text=$("#console-input").val();
             var array=text.split("\n");
             consoleSocket.send(array[n]);
+            $("#console-input").val(array[n]);
         }
     }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
