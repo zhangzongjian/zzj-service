@@ -211,6 +211,7 @@ public class FileServerController extends AbstractController implements WebSocke
             file = tmpFile;
         }
         response.setContentType("application/octet-stream");
+        response.setHeader("Content-Disposition", "attachment; filename=" + file.getName());
         response.setContentLength((int) file.length());
         try {
             toResponse(file);
